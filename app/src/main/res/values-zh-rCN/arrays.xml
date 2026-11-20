@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="language_options">
+        <item>英文</item>
+        <item>西班牙语</item>
+        <item>中文</item>
+    </string-array>
+    <string-array name="textEntry_options">
+        <item>Letter-by-letter</item>
+        <item>Ambiguous Keyboard Only</item>
+        <item>Ambiguous Keyboard + LLM</item>
+    </string-array>
+    <string-array name="sentenceGenerationModel_options">
+        <item>已配置模型（DeepSeek / Qwen / OpenAI）</item>
+        <item>Gemini</item>
+    </string-array>
+</resources>

@@ -1,0 +1,154 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+def propertyValue = { String name ->
+    def value = project.findProperty(name) ?: System.getenv(name) ?: ''
+    if (value.startsWith('"') && value.endsWith('"')) {
+        value = value.substring(1, value.length() - 1)
+    }
+    value
+}
+def buildConfigString = { String value ->
+    "\"${value.replace('\\', '\\\\').replace('"', '\\\"')}\""
+}
+def geminiKey = propertyValue('MY_GEMINI_KEY')
+def openAiKey = propertyValue('MY_OPENAI_KEY')
+def twitterApiKey = propertyValue('TWITTER_API_KEY')
+def twitterApiSecret = propertyValue('TWITTER_API_SECRET')
+def llmProvider = propertyValue('LLM_PROVIDER') ?: 'openai'
+def llmApiKey = propertyValue('LLM_API_KEY') ?: (llmProvider == 'openai' ? openAiKey : '')
+def defaultBaseUrl = [openai: 'https://api.openai.com/v1/',
+                      deepseek: 'https://api.deepseek.com/',
+                      qwen: 'https://dashscope.aliyuncs.com/compatible-mode/v1/'][llmProvider]
+def defaultModel = [openai: 'gpt-4o-mini', deepseek: 'deepseek-flash', qwen: 'qwen3.8-flash'][llmProvider]
+def llmBaseUrl = propertyValue('LLM_API_BASE_URL') ?: defaultBaseUrl
+def llmSentenceModel = propertyValue('LLM_SENTENCE_MODEL') ?: defaultModel
+def llmGeneralModel = propertyValue('LLM_GENERAL_MODEL') ?: llmSentenceModel
+def llmGeminiModel = propertyValue('LLM_GEMINI_MODEL') ?: 'gemini-2.5-flash'
+def ttsProvider = propertyValue('TTS_PROVIDER') ?: 'system'
+
+android {
+    namespace 'com.demo.opencv'
+    compileSdk 34
+
+    sourceSets {
+        main{
+            aidl.srcDirs = ['src']
+        }
+    }
+
+    java {
+        toolchain {
+            languageVersion.set(JavaLanguageVersion.of(17))
+        }
+    }
+
+    defaultConfig {
+        applicationId "com.demo.opencv"
+        minSdk 26
+        targetSdk 34
+        versionCode 12
+        versionName "2.10"
+        // All three ABIs include the complete camera/OpenCV/MediaPipe stack.
+        ndk { abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64' }
+
+        buildConfigField "String", "MY_GEMINI_KEY", buildConfigString(geminiKey)
+        buildConfigField "String", "MY_OPENAI_KEY", buildConfigString(openAiKey)
+        buildConfigField "String", "TWITTER_API_KEY", buildConfigString(twitterApiKey)
+        buildConfigField "String", "TWITTER_API_SECRET", buildConfigString(twitterApiSecret)
+        buildConfigField "String", "LLM_PROVIDER", buildConfigString(llmProvider)
+        buildConfigField "String", "LLM_API_KEY", buildConfigString(llmApiKey)
+        buildConfigField "String", "LLM_API_BASE_URL", buildConfigString(llmBaseUrl)
+        buildConfigField "String", "LLM_SENTENCE_MODEL", buildConfigString(llmSentenceModel)
+        buildConfigField "String", "LLM_GENERAL_MODEL", buildConfigString(llmGeneralModel)
+        buildConfigField "String", "LLM_GEMINI_MODEL", buildConfigString(llmGeminiModel)
+        buildConfigField "String", "TTS_PROVIDER", buildConfigString(ttsProvider)
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    aaptOptions {
+        noCompress "txt", "task"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    packagingOptions {
+        jniLibs {
+            // AGP 8.4 cannot reliably ZIP-align uncompressed libraries for
+            // 16 KB devices. Extract compressed, 16 KB ELF-aligned libraries.
+            useLegacyPackaging true
+        }
+    }
+    buildFeatures {
+        viewBinding true
+        aidl true
+    }
+}
+
+dependencies {
+
+    implementation 'com.belerweb:pinyin4j:2.5.1'
+
+    implementation("com.google.ai.client.generativeai:generativeai:0.6.0") // add the dependency for the Google AI client SDK for Android
+    implementation("com.google.guava:guava:31.0.1-android") // Required for one-shot operations (to use `ListenableFuture` from Guava Android)
+    implementation("org.reactivestreams:reactive-streams:1.0.4") // Required for streaming operations (to use `Publisher` from Reactive Streams)
+
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.9.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.9.0'
+
+    implementation 'org.twitter4j:twitter4j-core:4.0.7'
+    implementation 'com.github.scribejava:scribejava-apis:6.9.0'
+    implementation 'com.github.scribejava:scribejava-core:6.9.0'
+
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.9.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+
+    // Official OpenCV binaries include 16 KB-compatible ELF segments.
+    implementation 'org.opencv:opencv:4.12.0'
+    implementation 'androidx.navigation:navigation-fragment-ktx:2.7.3'
+    implementation 'androidx.navigation:navigation-ui-ktx:2.7.3'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'com.squareup.okhttp3:mockwebserver:4.9.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+
+    implementation 'com.google.mediapipe:tasks-vision:0.10.32'
+    implementation 'com.google.mlkit:face-detection:16.1.7' // bundled; no Play Services download required
+
+    implementation platform('com.google.firebase:firebase-bom:32.7.0') // google firebase
+    implementation 'com.google.firebase:firebase-analytics'
+    implementation("com.google.firebase:firebase-firestore")
+
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0' // MP Android Chart
+
+    implementation "androidx.datastore:datastore-preferences:1.0.0"
+    implementation "androidx.datastore:datastore-preferences-rxjava2:1.0.0" // optional - RxJava2 support
+    implementation "androidx.datastore:datastore-preferences-rxjava3:1.0.0" // optional - RxJava3 support
+
+    def camerax_version = "1.4.2"
+    implementation "androidx.camera:camera-core:${camerax_version}"
+    implementation "androidx.camera:camera-camera2:${camerax_version}"
+    implementation "androidx.camera:camera-lifecycle:${camerax_version}"
+    implementation "androidx.camera:camera-video:${camerax_version}"
+
+    implementation "androidx.camera:camera-view:${camerax_version}"
+    implementation "androidx.camera:camera-extensions:${camerax_version}"
+}
