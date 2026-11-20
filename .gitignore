@@ -1,0 +1,28 @@
+# Gradle and Android build output
+.gradle/
+**/.gradle/
+**/build/
+**/.cxx/
+**/.externalNativeBuild/
+**/captures/
+**/local.properties
+/gradle.properties
+
+# IDE and local tooling
+.idea/
+.vscode/
+*.iml
+
+# Local diagnostics, generated packages and signing material
+/work/
+/交付/
+*.apk
+*.aab
+*.jks
+*.keystore
+*.p12
+*.pfx
+# Unused duplicate OpenCV binaries; runtime shared libraries remain in opencv/native/libs
+/app/libs/
+/opencv/native/staticlibs/
+/opencv/native/3rdparty/libs/
